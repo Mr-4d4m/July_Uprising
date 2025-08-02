@@ -51,10 +51,12 @@ class FriendshipGreetingApp {
                 this.loadGreetingFromData(greetingData);
                 this.currentGreetingId = greetingId;
                 // Hide the form and show only the greeting
-                document.querySelector('.form-container').style.display = 'none';
-                document.querySelector('.greeting-preview').style.width = '100%';
-                document.querySelector('.greeting-preview').style.maxWidth = '600px';
-                document.querySelector('.greeting-preview').style.margin = '0 auto';
+                document.querySelector('.form-section').style.display = 'none';
+                document.querySelector('.preview-section').style.width = '100%';
+                document.querySelector('.preview-section').style.maxWidth = '600px';
+                document.querySelector('.preview-section').style.margin = '0 auto';
+                document.querySelector('.main-content').style.gridTemplateColumns = '1fr';
+                document.querySelector('.main-content').style.justifyContent = 'center';
                 
                 // Add a "Create Your Own" button
                 this.addCreateOwnButton();
