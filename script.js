@@ -73,6 +73,11 @@ class FriendshipGreetingApp {
                 document.querySelector('.container').style.alignItems = 'center';
                 document.querySelector('.container').style.justifyContent = 'center';
                 
+                // Hide unnecessary action buttons in shared view
+                document.getElementById('resetBtn').style.display = 'none';
+                document.getElementById('downloadBtn').style.display = 'none';
+                document.getElementById('shareBtn').style.display = 'none';
+                
                 // Add a "Create Your Own" button
                 this.addCreateOwnButton();
                 
@@ -109,8 +114,36 @@ class FriendshipGreetingApp {
         
         // Handle uploaded files if any
         if (data.uploadedFiles && data.uploadedFiles.length > 0) {
-            // Note: We can't restore actual files, but we can show placeholders
-            this.showNotification('Note: Shared greetings show text content only. Original images are not included for privacy.', 'info');
+            // Restore uploaded media in shared greetings
+            const mediaContainer = document.getElementById('mediaContainer');
+            mediaContainer.innerHTML = '';
+            
+            data.uploadedFiles.forEach(fileData => {
+                const mediaElement = document.createElement('div');
+                mediaElement.className = 'media-item';
+                
+                if (fileData.type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.src = fileData.data;
+                    img.alt = 'Uploaded image';
+                    img.style.maxWidth = '100%';
+                    img.style.height = 'auto';
+                    img.style.borderRadius = '8px';
+                    img.style.marginBottom = '10px';
+                    mediaElement.appendChild(img);
+                } else if (fileData.type.startsWith('video/')) {
+                    const video = document.createElement('video');
+                    video.src = fileData.data;
+                    video.controls = true;
+                    video.style.maxWidth = '100%';
+                    video.style.height = 'auto';
+                    video.style.borderRadius = '8px';
+                    video.style.marginBottom = '10px';
+                    mediaElement.appendChild(video);
+                }
+                
+                mediaContainer.appendChild(mediaElement);
+            });
         }
     }
 
@@ -185,7 +218,7 @@ class FriendshipGreetingApp {
         });
 
         document.getElementById('downloadBtn').addEventListener('click', () => {
-            this.downloadGreeting();
+            this.downloadCard();
         });
 
         document.getElementById('shareBtn').addEventListener('click', () => {
