@@ -154,13 +154,46 @@ class FriendshipGreetingApp {
         const actionButtons = document.querySelector('.action-buttons');
         const createOwnBtn = document.createElement('button');
         createOwnBtn.id = 'createOwnBtn';
-        createOwnBtn.className = 'action-btn';
-        createOwnBtn.innerHTML = '<i class="fas fa-plus"></i> Create Your Own';
-        createOwnBtn.style.background = '#667eea';
-        createOwnBtn.style.color = 'white';
-        createOwnBtn.style.border = '2px solid #667eea';
+        createOwnBtn.className = 'create-own-btn';
+        createOwnBtn.innerHTML = '<i class="fas fa-magic"></i> Create Your Own Greeting';
+        
+        // Enhanced styling for full width and animations
+        createOwnBtn.style.cssText = `
+            width: 100%;
+            padding: 18px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            animation: pulseGlow 2s infinite;
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        `;
+        
+        // Add hover effects
+        createOwnBtn.addEventListener('mouseenter', () => {
+            createOwnBtn.style.transform = 'translateY(-3px) scale(1.02)';
+            createOwnBtn.style.boxShadow = '0 12px 35px rgba(102, 126, 234, 0.4)';
+        });
+        
+        createOwnBtn.addEventListener('mouseleave', () => {
+            createOwnBtn.style.transform = 'translateY(0) scale(1)';
+            createOwnBtn.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.3)';
+        });
         
         createOwnBtn.addEventListener('click', () => {
+            // Add click animation
+            createOwnBtn.style.transform = 'scale(0.98)';
+            setTimeout(() => {
+                createOwnBtn.style.transform = 'scale(1)';
+            }, 150);
+            
             // Remove the greeting parameter from URL and reload
             const url = new URL(window.location);
             url.searchParams.delete('greeting');
@@ -686,9 +719,14 @@ class FriendshipGreetingApp {
 
     async uploadToImgBB(file) {
         const apiKey = '0ee3a371cdad624b9a1bacb8dc3c1696';
+        
+        // Compress image if it's too large to maintain quality
+        const compressedFile = await this.compressImage(file);
+        
         const formData = new FormData();
         formData.append('key', apiKey);
-        formData.append('image', file);
+        formData.append('image', compressedFile);
+        formData.append('expiration', '15552000'); // 6 months in seconds
         
         const response = await fetch('https://api.imgbb.com/1/upload', {
             method: 'POST',
@@ -705,6 +743,37 @@ class FriendshipGreetingApp {
         } else {
             throw new Error('ImgBB upload failed');
         }
+    }
+    
+    async compressImage(file, maxWidth = 1920, maxHeight = 1080, quality = 0.9) {
+        return new Promise((resolve) => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            img.onload = () => {
+                // Calculate new dimensions while maintaining aspect ratio
+                let { width, height } = img;
+                
+                if (width > maxWidth || height > maxHeight) {
+                    const ratio = Math.min(maxWidth / width, maxHeight / height);
+                    width *= ratio;
+                    height *= ratio;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Draw and compress
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                canvas.toBlob((blob) => {
+                    resolve(blob);
+                }, 'image/jpeg', quality);
+            };
+            
+            img.src = URL.createObjectURL(file);
+        });
     }
 }
 
