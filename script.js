@@ -143,6 +143,7 @@ class FriendshipGreetingApp {
                 }
                 
                 mediaContainer.querySelector('.media-grid').appendChild(mediaItem);
+            });
         }
     }
 
