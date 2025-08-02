@@ -31,7 +31,7 @@ A beautiful and interactive web application for creating personalized friendship
 
 ## 🌐 Live Demo
 
-[View Live Demo](https://your-username.github.io/friendshipday)
+[View Live Demo](https://sunmughan.github.io/friendshipday/)
 
 ## 🛠️ Technologies Used
 
