@@ -5,6 +5,12 @@ class FriendshipGreetingApp {
         this.currentAnimation = null;
         this.uploadedFiles = [];
         this.effectInterval = null;
+        this.currentGreetingId = null;
+        this.quotes = [
+            "Friendship is born at that moment when one person says to another, 'What! You too?'",
+            "A real friend is one who walks in when the rest of the world walks out.",
+            "Friends are the family you choose."
+        ];
         
         this.init();
     }
@@ -12,6 +18,97 @@ class FriendshipGreetingApp {
     init() {
         this.bindEvents();
         this.startDefaultEffect();
+        this.checkForSharedGreeting();
+    }
+
+    generateGreetingId() {
+        return 'greeting_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    saveGreeting(greetingData) {
+        const greetingId = this.generateGreetingId();
+        const greetings = JSON.parse(localStorage.getItem('friendshipGreetings') || '{}');
+        greetings[greetingId] = {
+            ...greetingData,
+            createdAt: new Date().toISOString()
+        };
+        localStorage.setItem('friendshipGreetings', JSON.stringify(greetings));
+        return greetingId;
+    }
+
+    loadGreeting(greetingId) {
+        const greetings = JSON.parse(localStorage.getItem('friendshipGreetings') || '{}');
+        return greetings[greetingId] || null;
+    }
+
+    checkForSharedGreeting() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const greetingId = urlParams.get('greeting');
+        
+        if (greetingId) {
+            const greetingData = this.loadGreeting(greetingId);
+            if (greetingData) {
+                this.loadGreetingFromData(greetingData);
+                this.currentGreetingId = greetingId;
+                // Hide the form and show only the greeting
+                document.querySelector('.form-container').style.display = 'none';
+                document.querySelector('.greeting-preview').style.width = '100%';
+                document.querySelector('.greeting-preview').style.maxWidth = '600px';
+                document.querySelector('.greeting-preview').style.margin = '0 auto';
+                
+                // Add a "Create Your Own" button
+                this.addCreateOwnButton();
+            }
+        }
+    }
+
+    loadGreetingFromData(data) {
+        // Update form fields
+        document.getElementById('friendName').value = data.friendName || '';
+        document.getElementById('memories').value = data.memories || '';
+        document.getElementById('message').value = data.message || '';
+        
+        // Set effects and styles
+        this.currentEffect = data.effect || 'hearts';
+        this.currentStyle = data.style || 'classic';
+        this.currentAnimation = data.animation || 'bounce';
+        
+        // Update the greeting display
+        this.updateFriendName(data.friendName || '');
+        this.updateMemories(data.memories || '');
+        this.updateMessage(data.message || '');
+        this.setEffect(this.currentEffect);
+        this.setStyle(this.currentStyle);
+        this.setAnimation(this.currentAnimation);
+        
+        // Handle uploaded files if any
+        if (data.uploadedFiles && data.uploadedFiles.length > 0) {
+            // Note: We can't restore actual files, but we can show placeholders
+            this.showNotification('Note: Shared greetings show text content only. Original images are not included for privacy.', 'info');
+        }
+    }
+
+    addCreateOwnButton() {
+        // Check if button already exists
+        if (document.getElementById('createOwnBtn')) return;
+        
+        const actionButtons = document.querySelector('.action-buttons');
+        const createOwnBtn = document.createElement('button');
+        createOwnBtn.id = 'createOwnBtn';
+        createOwnBtn.className = 'action-btn';
+        createOwnBtn.innerHTML = '<i class="fas fa-plus"></i> Create Your Own';
+        createOwnBtn.style.background = '#667eea';
+        createOwnBtn.style.color = 'white';
+        createOwnBtn.style.border = '2px solid #667eea';
+        
+        createOwnBtn.addEventListener('click', () => {
+            // Remove the greeting parameter from URL and reload
+            const url = new URL(window.location);
+            url.searchParams.delete('greeting');
+            window.location.href = url.toString();
+        });
+        
+        actionButtons.appendChild(createOwnBtn);
     }
 
     bindEvents() {
@@ -290,9 +387,26 @@ class FriendshipGreetingApp {
         const message = document.getElementById('message').value;
         
         if (!friendName.trim()) {
-            this.showNotification('Please enter your friend\'s name!', 'warning');
+            this.showNotification('Please enter your friend\'s name! 👤', 'error');
             return;
         }
+        
+        // Save greeting data
+        const greetingData = {
+            friendName: friendName,
+            memories: memories,
+            message: message,
+            effect: this.currentEffect,
+            style: this.currentStyle,
+            animation: this.currentAnimation,
+            uploadedFiles: this.uploadedFiles.map(file => ({ name: file.name, type: file.type }))
+        };
+        
+        this.currentGreetingId = this.saveGreeting(greetingData);
+        
+        this.updateFriendName(friendName);
+        this.updateMemories(memories);
+        this.updateMessage(message);
         
         // Add a special creation animation
         const greetingCard = document.getElementById('greetingCard');
@@ -301,7 +415,7 @@ class FriendshipGreetingApp {
         
         setTimeout(() => {
             greetingCard.style.transform = 'scale(1)';
-            this.showNotification('Greeting card created successfully! 🎉', 'success');
+            this.showNotification('Beautiful greeting created! 🎉 Ready to share!', 'success');
         }, 300);
         
         // Add some extra sparkle effect
@@ -352,17 +466,25 @@ class FriendshipGreetingApp {
     }
 
     shareGreeting() {
+        if (!this.currentGreetingId) {
+            this.showNotification('Please create a greeting first!', 'warning');
+            return;
+        }
+        
+        const shareUrl = `${window.location.origin}${window.location.pathname}?greeting=${this.currentGreetingId}`;
+        
         if (navigator.share) {
             navigator.share({
                 title: 'Friendship Day Greeting',
                 text: 'Check out this beautiful friendship day greeting I created!',
-                url: window.location.href
+                url: shareUrl
             });
         } else {
             // Fallback for browsers that don't support Web Share API
-            const url = window.location.href;
-            navigator.clipboard.writeText(url).then(() => {
-                this.showNotification('Link copied to clipboard! Share it with your friends! 📋', 'success');
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                this.showNotification('Greeting link copied to clipboard! Share it with your friends! 📋', 'success');
+            }).catch(() => {
+                this.showNotification('Failed to copy link. Please try again.', 'error');
             });
         }
     }
