@@ -316,9 +316,39 @@ class FriendshipGreetingApp {
         }
     }
 
-    downloadGreeting() {
-        // In a real app, you would use html2canvas or similar library
-        this.showNotification('Download feature would be implemented with html2canvas library!', 'info');
+    async downloadCard() {
+        try {
+            const greetingCard = document.getElementById('greetingCard');
+            
+            // Show loading notification
+            this.showNotification('Generating your greeting card...', 'info');
+            
+            // Configure html2canvas options
+            const canvas = await html2canvas(greetingCard, {
+                backgroundColor: null,
+                scale: 2, // Higher quality
+                useCORS: true,
+                allowTaint: true,
+                logging: false,
+                width: greetingCard.offsetWidth,
+                height: greetingCard.offsetHeight
+            });
+            
+            // Create download link
+            const link = document.createElement('a');
+            link.download = `friendship-greeting-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            
+            // Trigger download
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            this.showNotification('Greeting card downloaded successfully!', 'success');
+        } catch (error) {
+            console.error('Download error:', error);
+            this.showNotification('Failed to download greeting card. Please try again.', 'error');
+        }
     }
 
     shareGreeting() {
