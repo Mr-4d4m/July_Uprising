@@ -50,16 +50,40 @@ class FriendshipGreetingApp {
             if (greetingData) {
                 this.loadGreetingFromData(greetingData);
                 this.currentGreetingId = greetingId;
-                // Hide the form and show only the greeting
+                
+                // Hide unnecessary elements for shared view
+                document.querySelector('.header').style.display = 'none';
                 document.querySelector('.form-section').style.display = 'none';
+                document.querySelector('.footer').style.display = 'none';
+                
+                // Style the preview section for shared view
                 document.querySelector('.preview-section').style.width = '100%';
                 document.querySelector('.preview-section').style.maxWidth = '600px';
                 document.querySelector('.preview-section').style.margin = '0 auto';
                 document.querySelector('.main-content').style.gridTemplateColumns = '1fr';
                 document.querySelector('.main-content').style.justifyContent = 'center';
+                document.querySelector('.main-content').style.minHeight = '100vh';
+                document.querySelector('.main-content').style.alignItems = 'center';
+                document.querySelector('.main-content').style.display = 'flex';
+                
+                // Style the container for better centering
+                document.querySelector('.container').style.padding = '20px';
+                document.querySelector('.container').style.minHeight = '100vh';
+                document.querySelector('.container').style.display = 'flex';
+                document.querySelector('.container').style.alignItems = 'center';
+                document.querySelector('.container').style.justifyContent = 'center';
                 
                 // Add a "Create Your Own" button
                 this.addCreateOwnButton();
+                
+                // Show notification about shared greeting
+                this.showNotification('You are viewing a shared greeting! Create your own below.', 'info');
+            } else {
+                // If greeting data not found, show error and redirect
+                this.showNotification('Greeting not found. Redirecting to create a new one...', 'error');
+                setTimeout(() => {
+                    window.location.href = window.location.origin + window.location.pathname;
+                }, 3000);
             }
         }
     }
