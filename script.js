@@ -750,14 +750,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Change quote every 10 seconds
     const quoteElement = document.querySelector('.friendship-quote');
-    let quoteIndex = 0;
-    
-    setInterval(() => {
-        quoteIndex = (quoteIndex + 1) % quotes.length;
-        quoteElement.style.opacity = '0';
-        setTimeout(() => {
-            quoteElement.textContent = quotes[quoteIndex];
-            quoteElement.style.opacity = '1';
-        }, 300);
-    }, 10000);
+    if (quoteElement) {
+        let quoteIndex = 0;
+        
+        setInterval(() => {
+            quoteIndex = (quoteIndex + 1) % quotes.length;
+            quoteElement.style.opacity = '0';
+            setTimeout(() => {
+                quoteElement.textContent = quotes[quoteIndex];
+                quoteElement.style.opacity = '1';
+            }, 300);
+        }, 10000);
+    }
 });
