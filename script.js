@@ -116,34 +116,33 @@ class FriendshipGreetingApp {
         if (data.uploadedFiles && data.uploadedFiles.length > 0) {
             // Restore uploaded media in shared greetings
             const mediaContainer = document.getElementById('mediaContainer');
-            mediaContainer.innerHTML = '';
+            mediaContainer.innerHTML = '<div class="media-grid"></div>';
             
             data.uploadedFiles.forEach(fileData => {
-                const mediaElement = document.createElement('div');
-                mediaElement.className = 'media-item';
+                const mediaItem = document.createElement('div');
+                mediaItem.className = 'media-item';
                 
                 if (fileData.type.startsWith('image/')) {
                     const img = document.createElement('img');
-                    img.src = fileData.data;
+                    img.src = fileData.isLocal ? fileData.data : fileData.url;
                     img.alt = 'Uploaded image';
-                    img.style.maxWidth = '100%';
-                    img.style.height = 'auto';
+                    img.style.width = '100%';
+                    img.style.height = '200px';
+                    img.style.objectFit = 'cover';
                     img.style.borderRadius = '8px';
-                    img.style.marginBottom = '10px';
-                    mediaElement.appendChild(img);
+                    mediaItem.appendChild(img);
                 } else if (fileData.type.startsWith('video/')) {
                     const video = document.createElement('video');
                     video.src = fileData.data;
                     video.controls = true;
-                    video.style.maxWidth = '100%';
-                    video.style.height = 'auto';
+                    video.style.width = '100%';
+                    video.style.height = '200px';
+                    video.style.objectFit = 'cover';
                     video.style.borderRadius = '8px';
-                    video.style.marginBottom = '10px';
-                    mediaElement.appendChild(video);
+                    mediaItem.appendChild(video);
                 }
                 
-                mediaContainer.appendChild(mediaElement);
-            });
+                mediaContainer.querySelector('.media-grid').appendChild(mediaItem);
         }
     }
 
@@ -258,7 +257,7 @@ class FriendshipGreetingApp {
         p.textContent = message || "Your message will appear here...";
     }
 
-    handleFileUpload(files) {
+    async handleFileUpload(files) {
         const uploadPreview = document.getElementById('uploadPreview');
         const mediaContainer = document.getElementById('mediaContainer');
         
@@ -276,20 +275,29 @@ class FriendshipGreetingApp {
             return;
         }
 
-        Array.from(files).forEach((file, index) => {
-            if (index < 6) { // Limit to 6 files
-                this.uploadedFiles.push(file);
+        // Show uploading notification
+        this.showNotification('Uploading images... 📤', 'info');
+
+        for (let index = 0; index < Math.min(files.length, 6); index++) {
+            const file = files[index];
+            const isVideo = file.type.startsWith('video/');
+            
+            if (isVideo) {
+                // For videos, store locally (ImgBB doesn't support videos)
                 const reader = new FileReader();
-                
                 reader.onload = (e) => {
-                    const isVideo = file.type.startsWith('video/');
+                    const fileData = {
+                        name: file.name,
+                        type: file.type,
+                        data: e.target.result,
+                        isLocal: true
+                    };
+                    this.uploadedFiles.push(fileData);
                     
                     // Preview in form
                     const previewItem = document.createElement('div');
                     previewItem.className = 'preview-item';
-                    previewItem.innerHTML = isVideo ? 
-                        `<video src="${e.target.result}" controls></video>` :
-                        `<img src="${e.target.result}" alt="Preview">`;
+                    previewItem.innerHTML = `<video src="${e.target.result}" controls></video>`;
                     uploadPreview.appendChild(previewItem);
                     
                     // Display in card
@@ -299,16 +307,49 @@ class FriendshipGreetingApp {
                     
                     const mediaItem = document.createElement('div');
                     mediaItem.className = 'media-item';
-                    mediaItem.innerHTML = isVideo ? 
-                        `<video src="${e.target.result}" controls></video>` :
-                        `<img src="${e.target.result}" alt="Memory">`;
+                    mediaItem.innerHTML = `<video src="${e.target.result}" controls></video>`;
                     
                     mediaContainer.querySelector('.media-grid').appendChild(mediaItem);
                 };
-                
                 reader.readAsDataURL(file);
+            } else {
+                // For images, upload to ImgBB
+                try {
+                    const hostedUrl = await this.uploadToImgBB(file);
+                    const fileData = {
+                        name: file.name,
+                        type: file.type,
+                        url: hostedUrl,
+                        isLocal: false
+                    };
+                    this.uploadedFiles.push(fileData);
+                    
+                    // Preview in form
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'preview-item';
+                    previewItem.innerHTML = `<img src="${hostedUrl}" alt="Preview">`;
+                    uploadPreview.appendChild(previewItem);
+                    
+                    // Display in card
+                    if (index === 0) {
+                        mediaContainer.innerHTML = '<div class="media-grid"></div>';
+                    }
+                    
+                    const mediaItem = document.createElement('div');
+                    mediaItem.className = 'media-item';
+                    mediaItem.innerHTML = `<img src="${hostedUrl}" alt="Memory">`;
+                    
+                    mediaContainer.querySelector('.media-grid').appendChild(mediaItem);
+                } catch (error) {
+                    console.error('Failed to upload image:', error);
+                    this.showNotification('Failed to upload image. Please try again.', 'error');
+                }
             }
-        });
+        }
+        
+        if (this.uploadedFiles.length > 0) {
+            this.showNotification('Images uploaded successfully! 🎉', 'success');
+        }
     }
 
     setEffect(effect) {
@@ -458,7 +499,7 @@ class FriendshipGreetingApp {
             effect: this.currentEffect,
             style: this.currentStyle,
             animation: this.currentAnimation,
-            uploadedFiles: this.uploadedFiles.map(file => ({ name: file.name, type: file.type }))
+            uploadedFiles: this.uploadedFiles
         };
         
         this.currentGreetingId = this.saveGreeting(greetingData);
@@ -640,6 +681,29 @@ class FriendshipGreetingApp {
             info: '#17a2b8'
         };
         return colors[type] || '#17a2b8';
+    }
+
+    async uploadToImgBB(file) {
+        const apiKey = '0ee3a371cdad624b9a1bacb8dc3c1696';
+        const formData = new FormData();
+        formData.append('key', apiKey);
+        formData.append('image', file);
+        
+        const response = await fetch('https://api.imgbb.com/1/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to upload to ImgBB');
+        }
+        
+        const data = await response.json();
+        if (data.success) {
+            return data.data.url;
+        } else {
+            throw new Error('ImgBB upload failed');
+        }
     }
 }
 
