@@ -656,7 +656,19 @@ body {
     }
     
     .action-buttons {
-        flex-direction: column;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+    }
+    
+    .action-btn {
+        flex: 1;
+        min-width: 100px;
+        max-width: 120px;
+        padding: 10px 12px;
+        font-size: 13px;
+        text-align: center;
     }
     
     .effect-options {
@@ -669,12 +681,20 @@ body {
     }
     
     .footer-social {
-        flex-direction: column;
-        align-items: center;
+        flex-direction: row;
+        justify-content: center;
+        gap: 10px;
     }
     
     .social-btn {
-        width: 200px;
+        flex: 1;
+        max-width: 180px;
         justify-content: center;
+        padding: 8px 15px;
+        font-size: 13px;
+    }
+    
+    .social-btn span {
+        font-size: 12px;
     }
 }
